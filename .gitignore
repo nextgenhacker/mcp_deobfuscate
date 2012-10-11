@@ -1,0 +1,13 @@
+temp/
+src/
+bin/
+reobf/
+lib/
+jars/
+logs/
+mods/
+
+*.pyc
+*.pyo
+*.class
+*.jar
