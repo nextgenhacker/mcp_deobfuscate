@@ -23,6 +23,7 @@ CLIENT, SERVER = range(2)
 BASE = absolute(".")
 USER = relative("mods")
 TEMP = relative("temp/mods")
+LIB = relative("lib")
 MCP_TEMP = relative("temp")
 TARGET = relative("packages")
 
@@ -180,7 +181,7 @@ class Project(object):
         finally:
             archive.close()
 
-    def compile(self, side, out_dir):
+    def compile(self, side, out_dir, library_classpath):
         source_dirs = [os.path.join(self.dir, "src", "common")]
         if side == CLIENT:
             source_dirs.append(os.path.join(self.dir, "src", "client"))
@@ -192,44 +193,29 @@ class Project(object):
             source_files.update(self.collect_files(dir))
 
         if side == CLIENT:
-            classpath = MCP_BIN_CLIENT
+            classpath = MCP_BIN_CLIENT + ":" + library_classpath
         else: # if side == SERVER:
-            classpath = MCP_BIN_SERVER
+            classpath = MCP_BIN_SERVER + ":" + library_classpath
 
         command = ["javac", "-sourcepath", ":".join(source_dirs), "-classpath",
                    classpath, "-d", out_dir] + list(source_files)
 
         self.call_or_die(command)
 
-    def obfuscate(self, side):
+    def obfuscate(self, side, stored_inheritance):
         classpath = "runtime/bin/jcommander-1.29.jar:runtime/bin/asm-all-3.3.1.jar:runtime/bin/mcp_deobfuscate-1.0.jar"
         main_class = "org.ldg.mcpd.MCPDeobfuscate"
         outdir = TARGET
 
         if side == CLIENT:
             config = os.path.join(MCP_TEMP, "client_ro.srg")
-            stored_inheritance = os.path.join(TEMP, "mc.inh")
             mc_jar = DEOBF_CLIENT
         else: #if side == SERVER:
             config = os.path.join(MCP_TEMP, "server_ro.srg")
-            stored_inheritance = os.path.join(TEMP, "mc_server.inh")
             mc_jar = DEOBF_SERVER
 
-        if not os.path.exists(stored_inheritance):
-            command = ["java", "-classpath", classpath, main_class,
-                       "--indir", "/",
-                       "--infiles", mc_jar, "--inheritance", stored_inheritance]
-
-            if side == CLIENT:
-                print "---Creating client inheritance table---"
-            else: # if side == SERVER:
-                print "---Creating server inheritance table---"
-            self.call_or_die(command)
-            print "---Inheritance table created---"
-            print
-
         command = ["java", "-classpath", classpath, main_class,
-                   "--stored_inheritance", stored_inheritance, "--invert",
+                   "--stored_inheritance"] +  stored_inheritance + ["--invert",
                    "--config", config, "--outdir", outdir, "--indir", "/",
                    "--infiles", self.get_package_file(side)]
 
@@ -312,6 +298,24 @@ else:
     Project.collect_projects(USER, projects)
     print
 
+if os.path.exists(os.path.join(LIB, "minecraft.jar.inh")) \
+   or os.path.exists(os.path.join(LIB, "minecraft_server.jar.inh")):
+    pass # Yay!
+else:
+    print "Please run deobfuscate_libs first."
+    sys.exit(1)
+
+libraries = []
+stored_inheritance = []
+for filename in os.listdir(LIB):
+    base, extension = os.path.splitext(filename)
+    if extension.lower() == ".inh":
+        stored_inheritance.append(os.path.join(LIB, filename))
+    elif extension.lower() in [".jar", ".zip"]:
+        libraries.append(os.path.join(LIB, filename))
+
+library_classpath = ":".join(libraries)
+
 count = 0
 client_count = 0
 server_count = 0
@@ -325,13 +329,13 @@ for project in projects:
 
         clean_if_needed(compile_dir)
 
-        project.compile(side, compile_dir)
+        project.compile(side, compile_dir, library_classpath)
 
         created = project.package(side, compile_dir)
 
         if created:
             either_created = True
-            project.obfuscate(side)
+            project.obfuscate(side, stored_inheritance)
 
             if side == CLIENT:
                 client_count += 1
