@@ -189,18 +189,21 @@ for library in minecraft_jars + libraries:
 
 print "---Obfuscated inheritance tables complete---"
 print
-print "---Deobfuscating libraries---"
-obf_libraries = map(lambda library: library.name, libraries)
 
-command = BASIC_COMMAND + ["--stored_inheritance"] + obf_inheritances + [
-                           "--config", SRG,
-                           "--indir", OBF_LIBS, "--outdir", DEOBF_LIBS,
-                           "--infiles"] + obf_libraries
+if libraries:
+    print "---Deobfuscating libraries---"
+    obf_libraries = map(lambda library: library.name, libraries)
 
-call_or_die(command)
+    command = BASIC_COMMAND + ["--stored_inheritance"] + obf_inheritances + [
+                               "--config", SRG,
+                               "--indir", OBF_LIBS, "--outdir", DEOBF_LIBS,
+                               "--infiles"] + obf_libraries
 
-print "---Libraries deobfuscated---"
-print
+    call_or_die(command)
+
+    print "---Libraries deobfuscated---"
+    print
+
 print "---Creating deobfuscated inheritance tables---"
 for library in minecraft_jars + libraries:
     print library.name + "..."
