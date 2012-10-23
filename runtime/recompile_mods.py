@@ -326,6 +326,7 @@ for filename in os.listdir(LIB):
 library_classpath = ":".join(libraries)
 
 count = 0
+source_count = 0
 client_count = 0
 server_count = 0
 for project in projects:
@@ -360,8 +361,19 @@ for project in projects:
                 server_count += 1
     if any_created:
         count += 1
+        if not project.hide_source:
+            source_count += 1
 
 s = "" if count == 1 else "s"
 print "%d project%s compiled and packaged successfully." % (count, s)
 if count and not have_forge:
     print "(%d client, %d server)" % (client_count, server_count)
+if count:
+    if source_count == 0:
+        smiley = ":/"
+    elif source_count == count:
+        smiley = ":D"
+    else:
+        smiley = ":)"
+
+    print "Source included in packages for %d/%d projects.  %s" % (source_count, count, smiley)
