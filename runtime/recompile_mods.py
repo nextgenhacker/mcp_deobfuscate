@@ -18,7 +18,7 @@ def clean_if_needed(dir):
         shutil.rmtree(dir)
     os.makedirs(dir)
 
-CLIENT, SERVER = range(2)
+CLIENT, SERVER, FORGE = range(3)
 
 BASE = absolute(".")
 USER = relative("mods")
@@ -60,22 +60,6 @@ MCP_REOBF = relative("reobf")
 # The obvious subdirectories.
 MCP_REOBF_CLIENT = os.path.join(MCP_REOBF, "minecraft")
 MCP_REOBF_SERVER = os.path.join(MCP_REOBF, "minecraft_server")
-
-# Detect whether the script is running under windows.
-WINDOWS = (platform.system() == "Windows")
-
-# How to recompile with MCP.
-if WINDOWS:
-    RECOMPILE = relative("recompile.bat")
-else:
-    RECOMPILE = relative("recompile.sh")
-
-# How to reobfuscate with MCP.
-if WINDOWS:
-    REOBFUSCATE = relative("reobfuscate.bat")
-else:
-    REOBFUSCATE = relative("reobfuscate.sh")
-
 
 # This class is used to represent a user project, also known as a subdirectory
 # of USER.  The format is described in the README.
@@ -126,10 +110,17 @@ class Project(object):
             make_if_needed(dest_dir)
 
             for file in files:
+                if file.startswith("."):
+                    continue
+
                 try:
                     shutil.copy2(os.path.join(source_dir, file), dest_dir)
                 except shutil.WindowsError:
                     pass # Windows doesn't like copying access time.
+
+            for i in range(len(subdirs), 0, -1):
+                if subdirs[i-1].startswith("."):
+                    del subdirs[i-1]
 
     def get_package_file(self, side):
         if self.package_name is not None:
@@ -142,6 +133,8 @@ class Project(object):
 
         if side == SERVER:
             filename += "-server"
+        elif side == FORGE:
+            filename += "-universal"
 
         filename += ".zip"
 
@@ -155,11 +148,18 @@ class Project(object):
 
         for (dir, subdirs, files) in os.walk(root, followlinks=True):
             for file in files:
+                if file.startswith("."):
+                    continue
+
                 full_name = os.path.join(dir, file)
                 if relative:
                     all_files.add(os.path.relpath(full_name, root))
                 else:
                     all_files.add(full_name)
+
+            for i in range(len(subdirs), 0, -1):
+                if subdirs[i-1].startswith("."):
+                    del subdirs[i-1]
 
         return all_files
 
@@ -185,14 +185,14 @@ class Project(object):
         source_dirs = [os.path.join(self.dir, "src", "common")]
         if side == CLIENT:
             source_dirs.append(os.path.join(self.dir, "src", "client"))
-        else: # if side == SERVER:
+        elif side == SERVER:
             source_dirs.append(os.path.join(self.dir, "src", "server"))
 
         source_files = set()
         for dir in source_dirs:
             source_files.update(self.collect_files(dir))
 
-        if side == CLIENT:
+        if side in [CLIENT, FORGE]:
             classpath = MCP_BIN_CLIENT + ":" + library_classpath
         else: # if side == SERVER:
             classpath = MCP_BIN_SERVER + ":" + library_classpath
@@ -207,7 +207,7 @@ class Project(object):
         main_class = "org.ldg.mcpd.MCPDeobfuscate"
         outdir = TARGET
 
-        if side == CLIENT:
+        if side in [CLIENT, FORGE]:
             config = os.path.join(MCP_TEMP, "client_ro.srg")
             mc_jar = DEOBF_CLIENT
         else: #if side == SERVER:
@@ -244,7 +244,7 @@ class Project(object):
         if side == CLIENT:
             source = os.path.join(self.dir, "src", "client")
             resources = os.path.join(self.dir, "resources", "client")
-        else: #if side == SERVER:
+        elif side == SERVER:
             source = os.path.join(self.dir, "src", "server")
             resources = os.path.join(self.dir, "resources", "server")
 
@@ -260,7 +260,7 @@ class Project(object):
                 created = True
 
 
-            if os.path.isdir(source) and os.listdir(source):
+            if side != FORGE and os.path.isdir(source) and os.listdir(source):
                 os.chdir(source)
                 self.zip(package)
                 created = True
@@ -282,7 +282,7 @@ class Project(object):
             self.zip(package)
             created = True
 
-        if os.path.isdir(resources):
+        if side != FORGE and os.path.isdir(resources):
             os.chdir(resources)
             self.zip(package)
             created = True
@@ -290,13 +290,17 @@ class Project(object):
         os.chdir(BASE)
         return created
 
+have_forge = os.path.exists(relative("src/common"))
+if have_forge:
+    print "!!! Forge detected.  Building universal packages only. !!!"
+    print
+
 projects = []
 if not os.path.isdir(USER):
     print "No user directory found.  Nothing to do."
     sys.exit(0)
 else:
     Project.collect_projects(USER, projects)
-    print
 
 if os.path.exists(os.path.join(LIB, "minecraft.jar.inh")) \
    or os.path.exists(os.path.join(LIB, "minecraft_server.jar.inh")):
@@ -321,11 +325,19 @@ client_count = 0
 server_count = 0
 for project in projects:
     print "Processing %s..." % project.name
-    either_created = False
-    for side in [CLIENT, SERVER]:
+    any_created = False
+
+    if have_forge:
+        sides = [FORGE]
+    else:
+        sides = [CLIENT, SERVER]
+
+    for side in sides:
         compile_dir = os.path.join(TEMP, project.name)
         if side == SERVER:
             compile_dir += "_server"
+        elif side == FORGE:
+            compile_dir += "_universal"
 
         clean_if_needed(compile_dir)
 
@@ -334,17 +346,17 @@ for project in projects:
         created = project.package(side, compile_dir)
 
         if created:
-            either_created = True
+            any_created = True
             project.obfuscate(side, stored_inheritance)
 
             if side == CLIENT:
                 client_count += 1
-            else: #if side == SERVER:
+            elif side == SERVER:
                 server_count += 1
-    if either_created:
+    if any_created:
         count += 1
 
 s = "" if count == 1 else "s"
 print "%d project%s compiled and packaged successfully." % (count, s)
-if count:
+if count and not have_forge:
     print "(%d client, %d server)" % (client_count, server_count)
