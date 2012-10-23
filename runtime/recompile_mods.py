@@ -141,7 +141,7 @@ class Project(object):
         return os.path.join(TEMP, filename)
 
     @staticmethod
-    def collect_files(root, relative=False):
+    def collect_files(root, relative=False, required_extension=None):
         all_files = set()
         if not os.path.isdir(root):
             return all_files
@@ -149,6 +149,10 @@ class Project(object):
         for (dir, subdirs, files) in os.walk(root, followlinks=True):
             for file in files:
                 if file.startswith("."):
+                    continue
+
+                ext = os.path.splitext(file)[1].lower()
+                if required_extension and ext != required_extension:
                     continue
 
                 full_name = os.path.join(dir, file)
@@ -190,7 +194,7 @@ class Project(object):
 
         source_files = set()
         for dir in source_dirs:
-            source_files.update(self.collect_files(dir))
+            source_files.update(self.collect_files(dir, required_extension=".java"))
 
         if side in [CLIENT, FORGE]:
             classpath = MCP_BIN_CLIENT + ":" + library_classpath
