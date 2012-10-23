@@ -201,7 +201,8 @@ class Project(object):
         else: # if side == SERVER:
             classpath = MCP_BIN_SERVER + ":" + library_classpath
 
-        command = ["javac", "-sourcepath", ":".join(source_dirs), "-classpath",
+        command = ["javac", "-Xlint:all",
+                   "-sourcepath", ":".join(source_dirs), "-classpath",
                    classpath, "-d", out_dir] + list(source_files)
 
         self.call_or_die(command)
