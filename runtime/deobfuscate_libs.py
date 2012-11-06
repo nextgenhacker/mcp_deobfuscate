@@ -35,10 +35,10 @@ if not os.path.exists(OBF_LIBS):
 clean_if_needed(TEMP)
 
 # JAR files to build against.
-OBF_CLIENT = relative("jars/bin/minecraft.jar")
-DEOBF_CLIENT = relative("temp/minecraft_exc.jar")
-OBF_SERVER = relative("jars/minecraft_server.jar")
-DEOBF_SERVER = relative("temp/minecraft_server_exc.jar")
+OBF_CLIENT = relative("temp/client_reobf.jar")
+DEOBF_CLIENT = relative("temp/client_recomp.jar")
+OBF_SERVER = relative("temp/server_reobf.jar")
+DEOBF_SERVER = relative("temp/server_recomp.jar")
 
 def call_or_die(cmd, shell=False):
     if shell:

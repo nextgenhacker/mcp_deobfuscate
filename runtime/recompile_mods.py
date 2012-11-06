@@ -307,8 +307,8 @@ if not os.path.isdir(USER):
 else:
     Project.collect_projects(USER, projects)
 
-if os.path.exists(os.path.join(LIB, "minecraft.jar.inh")) \
-   or os.path.exists(os.path.join(LIB, "minecraft_server.jar.inh")):
+if os.path.exists(os.path.join(LIB, "client_reobf.jar.inh")) \
+   or os.path.exists(os.path.join(LIB, "server_reobf.jar.inh")):
     pass # Yay!
 else:
     print "Please run deobfuscate_libs first."
