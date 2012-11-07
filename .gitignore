@@ -1,0 +1,84 @@
+# NOTE: There's a list of possibly-interesting files and directories at the end
+#       that are hidden because they're not interesting *right now*.  Feel free
+#       to delete any that match something you're editing.
+
+# Our own input/output directories
+mods/
+packages/
+lib-obf/
+lib/
+
+# Generic compiled files and packages that might turn up.
+*.pyc
+*.pyo
+*.class
+*.jar
+*.zip
+
+# The MCP directories we don't care about.
+temp/
+src/
+bin/
+reobf/
+jars/
+logs/
+docs/
+eclipse/
+
+
+# Forge's install directory
+forge/
+
+# The top-level MCP scripts, most of which just call out to stuff in runtime/
+cleanup.bat
+cleanup.sh
+decompile.bat
+decompile.sh
+getchangedsrc.bat
+getchangedsrc.sh
+recompile.sh
+recompile.bat
+reformat.bat
+reformat.sh
+reobfuscate.bat
+reobfuscate.sh
+startclient.bat
+startclient.sh
+startserver.bat
+startserver.sh
+updateids.bat
+updateids.sh
+updatemcp.bat
+updatemcp.sh
+updatemd5.bat
+updatemd5.sh
+updatenames.bat
+updatenames.sh
+
+
+# Other known-uninteresting files.
+CHANGELOG
+LICENSE.txt
+
+
+# Stuff that might be interesting, but isn't used yet.  This just keeps
+# 'git status' clean.
+conf/
+runtime/__init__.py
+runtime/cleanup.py
+runtime/commands.py
+runtime/commands.py.bck
+runtime/decompile.py
+runtime/filehandling/
+runtime/getchangedsrc.py
+runtime/mcp.py
+runtime/pylibs/
+runtime/recompile.py
+runtime/reformat.py
+runtime/reobfuscate.py
+runtime/startclient.py
+runtime/startserver.py
+runtime/updateids.py
+runtime/updatemcp.py
+runtime/updatemd5.py
+runtime/updatenames.py
